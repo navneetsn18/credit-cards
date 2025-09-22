@@ -2,12 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import CardPlatform from '@/lib/models/Card';
 import mongoose from 'mongoose';
+import { canWrite } from '@/lib/permissions';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!canWrite()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied',
+          message: 'Write access is disabled',
+        },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     const { id } = await params;
@@ -97,6 +109,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!canWrite()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied',
+          message: 'Write access is disabled',
+        },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     const { id } = await params;

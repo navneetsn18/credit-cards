@@ -16,6 +16,7 @@ interface CardFormProps {
   initialData?: Partial<ICardPlatform>;
   isEditing?: boolean;
   isLoading?: boolean;
+  disabled?: boolean;
 }
 
 export default function CardForm({
@@ -24,6 +25,7 @@ export default function CardForm({
   initialData,
   isEditing = false,
   isLoading = false,
+  disabled = false,
 }: CardFormProps) {
   const [formData, setFormData] = useState({
     cardName: '',
@@ -153,7 +155,7 @@ export default function CardForm({
                 }
               }}
               placeholder="Select a card"
-              disabled={isLoading}
+              disabled={disabled || isLoading}
             />
             {errors.cardName && (
               <p className="text-sm text-red-600">{errors.cardName}</p>
@@ -173,7 +175,7 @@ export default function CardForm({
               placeholder="e.g., Amazon, Flipkart, Offline"
               value={formData.platformName}
               onChange={handleInputChange}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className={`text-gray-900 bg-white ${errors.platformName ? 'border-red-500' : ''}`}
             />
             {errors.platformName && (
@@ -194,7 +196,7 @@ export default function CardForm({
               placeholder="https://example.com/platform-logo.jpg"
               value={formData.platformImageUrl}
               onChange={handleInputChange}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className={`text-gray-900 bg-white ${errors.platformImageUrl ? 'border-red-500' : ''}`}
             />
             {formData.platformImageUrl && (
@@ -227,7 +229,7 @@ export default function CardForm({
               placeholder="e.g., 2% cashback, 5x points, 10% up to ₹500"
               value={formData.rewardRate}
               onChange={handleInputChange}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className={`text-gray-900 bg-white ${errors.rewardRate ? 'border-red-500' : ''}`}
             />
             {errors.rewardRate && (
@@ -248,7 +250,7 @@ export default function CardForm({
               placeholder="Add notes about caps, milestones, or redemption options..."
               value={formData.description}
               onChange={handleInputChange}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className={`text-gray-900 bg-white resize-none ${errors.description ? 'border-red-500' : ''}`}
             />
             {errors.description && (
@@ -260,7 +262,7 @@ export default function CardForm({
           <div className="flex gap-4 pt-4">
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className="flex-1"
             >
               {isLoading ? (
@@ -278,7 +280,7 @@ export default function CardForm({
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={isLoading}
+                disabled={disabled || isLoading}
               >
                 Cancel
               </Button>

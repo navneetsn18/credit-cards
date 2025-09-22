@@ -12,6 +12,7 @@ interface CardTableProps {
   onEdit: (card: ICardPlatform) => void;
   onDelete: (id: string) => Promise<void>;
   isLoading?: boolean;
+  readOnly?: boolean;
 }
 
 interface CardWithImages {
@@ -26,7 +27,7 @@ interface CardWithImages {
   cardImageUrl?: string;
 }
 
-export default function CardTable({ cards, onEdit, onDelete, isLoading = false }: CardTableProps) {
+export default function CardTable({ cards, onEdit, onDelete, isLoading = false, readOnly = false }: CardTableProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [cardsWithImages, setCardsWithImages] = useState<CardWithImages[]>([]);
@@ -207,54 +208,58 @@ export default function CardTable({ cards, onEdit, onDelete, isLoading = false }
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(card as ICardPlatform)}
-                        disabled={isLoading}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      
-                      {deleteConfirm === card._id ? (
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteConfirm(card._id)}
-                            disabled={deletingId === card._id}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                          >
-                            {deletingId === card._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleDeleteCancel}
-                            disabled={deletingId === card._id}
-                            className="h-8 w-8 p-0 text-gray-600 hover:text-gray-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
+                    {!readOnly ? (
+                      <div className="flex items-center justify-end space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteClick(card._id)}
+                          onClick={() => onEdit(card as ICardPlatform)}
                           disabled={isLoading}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          className="h-8 w-8 p-0"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      )}
-                    </div>
+                        
+                        {deleteConfirm === card._id ? (
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteConfirm(card._id)}
+                              disabled={deletingId === card._id}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              {deletingId === card._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleDeleteCancel}
+                              disabled={deletingId === card._id}
+                              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(card._id)}
+                            disabled={isLoading}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">Read Only</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -9,14 +9,18 @@ import AddCardForm from '@/components/AddCardForm';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ICardPlatform } from '@/lib/models/Card';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, Settings, Lock, Eye, Edit, Shield } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function ManagePage() {
   const [cards, setCards] = useState<ICardPlatform[]>([]);
   const [editingCard, setEditingCard] = useState<ICardPlatform | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const permissions = usePermissions();
 
   const fetchCards = useCallback(async () => {
     try {
@@ -54,6 +58,11 @@ export default function ManagePage() {
   };
 
   const handleCreateCard = async (data: Partial<ICardPlatform>) => {
+    if (!permissions.write) {
+      showMessage('error', 'Write access is disabled');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await fetch('/api/cards', {
@@ -82,6 +91,11 @@ export default function ManagePage() {
 
   const handleUpdateCard = async (data: Partial<ICardPlatform>) => {
     if (!editingCard) return;
+    
+    if (!permissions.write) {
+      showMessage('error', 'Write access is disabled');
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -113,6 +127,11 @@ export default function ManagePage() {
   };
 
   const handleDeleteCard = async (id: string) => {
+    if (!permissions.write) {
+      showMessage('error', 'Write access is disabled');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/cards/${id}`, {
         method: 'DELETE',
@@ -194,6 +213,44 @@ export default function ManagePage() {
         </div>
       )}
 
+      {/* Permissions Status */}
+      <div className="container mx-auto px-4 py-6">
+        <Card className="bg-white/50 backdrop-blur-sm border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-gray-600" />
+                <span className="font-medium text-gray-900">Access Permissions</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  <Badge variant={permissions.read ? "default" : "secondary"} className={permissions.read ? "bg-green-100 text-green-800" : ""}>
+                    Read: {permissions.loading ? "..." : permissions.read ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
+                  <Badge variant={permissions.write ? "default" : "secondary"} className={permissions.write ? "bg-blue-100 text-blue-800" : ""}>
+                    Write: {permissions.loading ? "..." : permissions.write ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            {!permissions.write && !permissions.loading && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-yellow-600" />
+                  <p className="text-sm text-yellow-800">
+                    Write access is disabled. You can view data but cannot add, edit, or delete records.
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="add-cards" className="w-full">
@@ -204,7 +261,7 @@ export default function ManagePage() {
           
           <TabsContent value="add-cards" className="space-y-6">
             <div className="max-w-md mx-auto">
-              <AddCardForm onCardAdded={handleCardAdded} />
+              <AddCardForm onCardAdded={handleCardAdded} disabled={!permissions.write} />
             </div>
           </TabsContent>
           
@@ -218,6 +275,7 @@ export default function ManagePage() {
                   initialData={editingCard || undefined}
                   isEditing={!!editingCard}
                   isLoading={isLoading}
+                  disabled={!permissions.write}
                 />
               </div>
 
@@ -228,6 +286,7 @@ export default function ManagePage() {
                   onEdit={handleEditCard}
                   onDelete={handleDeleteCard}
                   isLoading={isLoading}
+                  readOnly={!permissions.write}
                 />
               </div>
             </div>

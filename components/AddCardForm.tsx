@@ -16,9 +16,10 @@ import { Loader2, CreditCard, Image } from "lucide-react";
 
 interface AddCardFormProps {
   onCardAdded: () => void;
+  disabled?: boolean;
 }
 
-export default function AddCardForm({ onCardAdded }: AddCardFormProps) {
+export default function AddCardForm({ onCardAdded, disabled = false }: AddCardFormProps) {
   const [formData, setFormData] = useState({
     cardName: "",
     imageUrl: "",
@@ -101,7 +102,7 @@ export default function AddCardForm({ onCardAdded }: AddCardFormProps) {
               placeholder="e.g., Chase Sapphire Preferred"
               value={formData.cardName}
               onChange={(e) => handleInputChange("cardName", e.target.value)}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className="text-gray-900 bg-white"
             />
           </div>
@@ -117,7 +118,7 @@ export default function AddCardForm({ onCardAdded }: AddCardFormProps) {
               placeholder="https://example.com/card-image.jpg"
               value={formData.imageUrl}
               onChange={(e) => handleInputChange("imageUrl", e.target.value)}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className="text-gray-900 bg-white"
             />
             {formData.imageUrl && (
@@ -136,7 +137,7 @@ export default function AddCardForm({ onCardAdded }: AddCardFormProps) {
 
           <Button
             type="submit"
-            disabled={isLoading || !formData.cardName.trim()}
+            disabled={disabled || isLoading || !formData.cardName.trim()}
             className="w-full"
           >
             {isLoading ? (

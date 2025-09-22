@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import CardPlatform from '@/lib/models/Card';
+import { canRead, canWrite } from '@/lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
+    if (!canRead()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied',
+          message: 'Read access is disabled',
+          data: [],
+          count: 0,
+        },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -55,6 +69,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!canWrite()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied',
+          message: 'Write access is disabled',
+        },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     const body = await request.json();
