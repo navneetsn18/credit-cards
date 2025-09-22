@@ -241,14 +241,16 @@ export function useCachedApi<T>(
 
 // Specialized hooks for common API calls
 export function useCachedCards(options?: UseCachedApiOptions) {
-  return useCachedApi(CACHE_KEYS.CARDS, '/api/cards', {
+  // Use a cache-busting query once to avoid any previously cached CDN entries
+  return useCachedApi(CACHE_KEYS.CARDS, '/api/cards?nocache=1', {
     ttl: CACHE_TTL.CARDS,
     ...options,
   });
 }
 
 export function useCachedCardNames(options?: UseCachedApiOptions) {
-  const result = useCachedApi(CACHE_KEYS.CARD_NAMES, '/api/cards/names', {
+  // Use a cache-busting query once to avoid any previously cached CDN entries
+  const result = useCachedApi(CACHE_KEYS.CARD_NAMES, '/api/cards/names?nocache=1', {
     ttl: CACHE_TTL.CARD_NAMES,
     ...options,
   });

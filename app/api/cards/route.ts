@@ -41,8 +41,10 @@ export async function GET(request: NextRequest) {
       count: cards.length,
     });
 
-    // Add cache headers for better performance
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Disable CDN caching to ensure the latest data is always returned
+    response.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     return response;
   } catch (error) {
     console.error('GET /api/cards error:', error);

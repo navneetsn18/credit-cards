@@ -50,8 +50,10 @@ export async function GET() {
       count: cards.length,
     });
 
-    // Add cache headers - card names change less frequently
-    response.headers.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=3600');
+    // Disable CDN caching so new card names are visible immediately
+    response.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     return response;
   } catch (error) {
     console.error('GET /api/cards/names error:', error);
