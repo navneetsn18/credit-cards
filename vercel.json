@@ -3,9 +3,5 @@
     "app/api/**/*.ts": {
       "maxDuration": 10
     }
-  },
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "MONGODB_DB": "@mongodb_db"
   }
 }

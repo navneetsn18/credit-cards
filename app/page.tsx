@@ -3,7 +3,7 @@ import SearchInterface from '@/components/SearchInterface';
 async function getCards() {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cards`, {
-      cache: 'no-store',
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
     });
     
     const result = await response.json();
