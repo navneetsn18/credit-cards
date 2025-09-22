@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ICardPlatform } from '@/lib/models/Card';
 import CardDropdown from './CardDropdown';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Store, Image, Percent, FileText } from 'lucide-react';
+
+export interface CardFormRef {
+  resetForm: () => void;
+}
 
 interface CardFormProps {
   onSubmit: (data: Partial<ICardPlatform>) => Promise<void>;
@@ -19,14 +23,17 @@ interface CardFormProps {
   disabled?: boolean;
 }
 
-export default function CardForm({
-  onSubmit,
-  onCancel,
-  initialData,
-  isEditing = false,
-  isLoading = false,
-  disabled = false,
-}: CardFormProps) {
+const CardForm = forwardRef<CardFormRef, CardFormProps>((
+  {
+    onSubmit,
+    onCancel,
+    initialData,
+    isEditing = false,
+    isLoading = false,
+    disabled = false,
+  },
+  ref
+) => {
   const [formData, setFormData] = useState({
     cardName: '',
     platformName: '',
@@ -35,6 +42,21 @@ export default function CardForm({
     description: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const resetForm = () => {
+    setFormData({
+      cardName: '',
+      platformName: '',
+      platformImageUrl: '',
+      rewardRate: '',
+      description: '',
+    });
+    setErrors({});
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetForm,
+  }));
 
   useEffect(() => {
     if (initialData) {
@@ -90,16 +112,7 @@ export default function CardForm({
 
     try {
       await onSubmit(formData);
-      if (!isEditing) {
-        // Reset form after successful creation
-        setFormData({
-          cardName: '',
-          platformName: '',
-          platformImageUrl: '',
-          rewardRate: '',
-          description: '',
-        });
-      }
+      // Form reset is now handled by the parent component through ref
       setErrors({});
     } catch (error) {
       console.error('Form submission error:', error);
@@ -290,4 +303,8 @@ export default function CardForm({
       </CardContent>
     </Card>
   );
-}
+});
+
+CardForm.displayName = 'CardForm';
+
+export default CardForm;

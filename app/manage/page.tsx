@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import CardForm from '@/components/CardForm';
+import CardForm, { CardFormRef } from '@/components/CardForm';
 import CardTable from '@/components/CardTable';
 import AddCardForm from '@/components/AddCardForm';
 import DeleteConfirmationDialog from '@/components/DeleteConfirmationDialog';
+import ConfirmationDialog from '@/components/ConfirmationDialog';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,7 +28,14 @@ export default function ManagePage() {
     open: boolean;
     card: ICardPlatform | null;
   }>({ open: false, card: null });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    type: 'create' | 'update';
+    data: Partial<ICardPlatform> | null;
+  }>({ open: false, type: 'create', data: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const cardFormRef = useRef<CardFormRef | null>(null);
   const permissions = usePermissions();
   
   const handleError = useCallback((error: string) => {
@@ -42,7 +50,6 @@ export default function ManagePage() {
     data: cards,
     loading: isLoading,
     refresh: refreshCards,
-    invalidate: invalidateCards,
     mutate: mutateCards,
     isStale,
   } = useCachedCards({
@@ -56,6 +63,20 @@ export default function ManagePage() {
       return;
     }
 
+    // Show confirmation dialog instead of directly submitting
+    setConfirmDialog({
+      open: true,
+      type: 'create',
+      data: data
+    });
+  };
+
+  const confirmCreateCard = async () => {
+    if (!confirmDialog.data) return;
+    
+    setIsSubmitting(true);
+    const data = confirmDialog.data;
+
     try {
       const response = await fetch('/api/cards', {
         method: 'POST',
@@ -68,10 +89,23 @@ export default function ManagePage() {
       const result = await response.json();
 
       if (result.success) {
-        // Clear all related caches and refresh data
-        browserCache.delete(CACHE_KEYS.CARDS);
+        // Optimistically add the new card to the cache
+        const currentCards = (cards as ICardPlatform[]) || [];
+        const newCard = result.data || { 
+          ...data, 
+          _id: result._id || Date.now().toString(), 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        };
+        const updatedCards = [...currentCards, newCard];
+        mutateCards(updatedCards as ICardPlatform[]);
+        
+        // Clear related caches
         browserCache.delete(CACHE_KEYS.CARD_NAMES);
-        await invalidateCards();
+        
+        setConfirmDialog({ open: false, type: 'create', data: null });
+        // Reset the form after successful creation
+        cardFormRef.current?.resetForm();
         toast.success('Benefits added successfully!', {
           description: `Added benefits for ${data.cardName} on ${data.platformName}`,
         });
@@ -85,6 +119,8 @@ export default function ManagePage() {
       toast.error('Failed to add benefits', {
         description: 'Network error. Please check your connection and try again.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -95,6 +131,20 @@ export default function ManagePage() {
       toast.error('Write access is disabled');
       return;
     }
+
+    // Show confirmation dialog instead of directly submitting
+    setConfirmDialog({
+      open: true,
+      type: 'update',
+      data: data
+    });
+  };
+
+  const confirmUpdateCard = async () => {
+    if (!confirmDialog.data || !editingCard) return;
+    
+    setIsSubmitting(true);
+    const data = confirmDialog.data;
 
     try {
       const response = await fetch(`/api/cards/${editingCard._id}`, {
@@ -108,10 +158,17 @@ export default function ManagePage() {
       const result = await response.json();
 
       if (result.success) {
-        // Clear all related caches and refresh data
-        browserCache.delete(CACHE_KEYS.CARDS);
+        // Optimistically update the cache with the new data
+        const currentCards = cards as ICardPlatform[];
+        const updatedCards = currentCards.map(card => 
+          card._id === editingCard._id ? { ...card, ...data, updatedAt: new Date() } : card
+        );
+        mutateCards(updatedCards as ICardPlatform[]);
+        
+        // Clear all related caches
         browserCache.delete(CACHE_KEYS.CARD_NAMES);
-        await invalidateCards();
+        
+        setConfirmDialog({ open: false, type: 'update', data: null });
         setEditingCard(null);
         toast.success('Benefits updated successfully!', {
           description: `Updated benefits for ${editingCard.cardName} on ${editingCard.platformName}`,
@@ -126,6 +183,8 @@ export default function ManagePage() {
       toast.error('Failed to update benefits', {
         description: 'Network error. Please check your connection and try again.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -189,6 +248,20 @@ export default function ManagePage() {
 
   const handleDeleteCancel = () => {
     setDeleteDialog({ open: false, card: null });
+  };
+
+  const handleConfirmDialogClose = () => {
+    if (!isSubmitting) {
+      setConfirmDialog({ open: false, type: 'create', data: null });
+    }
+  };
+
+  const handleConfirmSubmit = () => {
+    if (confirmDialog.type === 'create') {
+      confirmCreateCard();
+    } else {
+      confirmUpdateCard();
+    }
   };
 
   const handleEditCard = (card: ICardPlatform) => {
@@ -330,6 +403,7 @@ export default function ManagePage() {
               {/* Form Section */}
               <div>
                 <CardForm
+                  ref={cardFormRef}
                   onSubmit={editingCard ? handleUpdateCard : handleCreateCard}
                   onCancel={editingCard ? handleCancelEdit : undefined}
                   initialData={editingCard || undefined}
@@ -371,6 +445,25 @@ export default function ManagePage() {
         }
         isDeleting={isDeleting}
       />
+      
+      {/* Add/Update Confirmation Dialog */}
+      {confirmDialog.data && (
+        <ConfirmationDialog
+          open={confirmDialog.open}
+          onClose={handleConfirmDialogClose}
+          onConfirm={handleConfirmSubmit}
+          title={confirmDialog.type === 'create' ? 'Confirm Add Benefits' : 'Confirm Update Benefits'}
+          data={{
+            cardName: confirmDialog.data.cardName || '',
+            platformName: confirmDialog.data.platformName || '',
+            rewardRate: confirmDialog.data.rewardRate || '',
+            description: confirmDialog.data.description,
+            platformImageUrl: confirmDialog.data.platformImageUrl,
+          }}
+          type={confirmDialog.type}
+          isLoading={isSubmitting}
+        />
+      )}
     </div>
   );
 }
