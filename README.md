@@ -7,8 +7,11 @@ A modern NextJS application for tracking credit card benefits across different p
 - 🔍 **Smart Search**: Search for credit cards by platform or merchant name
 - 📊 **Reward Comparison**: View all cards ranked by reward rate for optimal selection
 - ⚡ **Real-time Management**: Add, edit, and delete card-platform combinations
+- 🔒 **Security**: Secret-protected delete operations to prevent accidental data loss
+- 🔔 **Toast Notifications**: Real-time success/error feedback for all operations
 - 📱 **Responsive Design**: Modern, mobile-first interface with Tailwind CSS
 - 🚀 **Fast Performance**: Built with NextJS 14 and optimized for Vercel deployment
+- ⚡ **Smart Caching**: Advanced cache invalidation and optimistic updates
 
 ## Tech Stack
 
@@ -39,12 +42,20 @@ npm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory:
+Copy the example file and update with your values:
+```bash
+cp .env.example .env.local
+```
+
+Update `.env.local` with your configuration:
 ```env
 MONGODB_URI=<YOUR_MONGODB_URI>
 MONGODB_DB=credit-cards-benefits
+DELETE_SECRET=your-super-secure-delete-secret-here
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
+
+> **Important**: The `DELETE_SECRET` is required for secure delete operations. Use a strong, random string in production.
 
 4. Run the development server:
 ```bash
@@ -63,8 +74,10 @@ npm run dev
 ### Management Interface (/manage)
 - Add new credit card and platform combinations
 - Edit existing entries with real-time updates
-- Delete outdated information with confirmation
+- Delete outdated information with secret-protected confirmation
 - View all entries in an organized table
+- Real-time toast notifications for all operations
+- Smart cache invalidation for instant UI updates
 
 ## Deployment on Vercel
 
@@ -92,22 +105,27 @@ vercel
 4. Set environment variables in Vercel dashboard:
    - `MONGODB_URI`: Your MongoDB connection string
    - `MONGODB_DB`: Your database name
+   - `DELETE_SECRET`: A strong, random secret for delete operations
    - `NEXT_PUBLIC_BASE_URL`: Your production URL
 
 ### Environment Variables for Production
 
 In your Vercel dashboard, add these environment variables:
 
-- `MONGODB_URI`: `mongodb+srv://testingfornsn_db_user:apNIpU5Hiz5Q7mxV@credit-cards.x51intw.mongodb.net/`
+- `MONGODB_URI`: Your MongoDB Atlas connection string
 - `MONGODB_DB`: `credit-cards-benefits`
+- `DELETE_SECRET`: A strong random string (use a password generator)
 - `NEXT_PUBLIC_BASE_URL`: `https://your-app-name.vercel.app`
+
+> **Security Note**: Never share your `DELETE_SECRET` publicly. Generate a unique, strong secret for production using tools like `openssl rand -hex 32`.
 
 ## API Endpoints
 
 - `GET /api/cards` - Fetch all cards (with optional platform filter)
 - `POST /api/cards` - Create new card-platform combination
 - `PUT /api/cards/[id]` - Update existing card
-- `DELETE /api/cards/[id]` - Delete card
+- `DELETE /api/cards/[id]` - Delete card (requires `x-delete-secret` header)
+- `GET /api/permissions` - Check read/write permissions
 
 ## Data Model
 
@@ -117,12 +135,37 @@ Each card-platform combination includes:
 - **Reward Rate**: e.g., "2% cashback", "5x points", "10% up to ₹500"
 - **Description**: Optional notes about caps, milestones, redemption options
 
+## Troubleshooting
+
+### Common Issues
+
+**UI not updating after create/update/delete operations:**
+- Check browser console for errors
+- Ensure cache invalidation is working properly
+- Verify toast notifications are appearing
+- Try refreshing the page or clearing browser cache
+
+**Delete operations failing:**
+- Verify `DELETE_SECRET` is set in environment variables
+- Ensure the secret matches between client and server
+- Check network tab for 401 errors
+
+**Toast notifications not appearing:**
+- Verify the Toaster component is mounted in the layout
+- Check for JavaScript errors in console
+- Ensure sonner package is properly installed
+
+**Cache issues:**
+- Clear browser storage (localStorage)
+- Use the refresh button in the manage interface
+- Check if cache TTL values are appropriate
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly (especially cache invalidation and toast notifications)
 5. Submit a pull request
 
 ## License

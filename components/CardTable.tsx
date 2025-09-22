@@ -5,13 +5,13 @@ import { ICardPlatform } from '@/lib/models/Card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Check, X, CreditCard, Store, Loader2 } from 'lucide-react';
+import { Edit, Trash2, CreditCard, Store } from 'lucide-react';
 import { useCachedCardNames } from '@/hooks/useCachedApi';
 
 interface CardTableProps {
   cards: ICardPlatform[];
   onEdit: (card: ICardPlatform) => void;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (card: ICardPlatform) => void;
   isLoading?: boolean;
   readOnly?: boolean;
 }
@@ -29,8 +29,6 @@ interface CardWithImages {
 }
 
 export default function CardTable({ cards, onEdit, onDelete, isLoading = false, readOnly = false }: CardTableProps) {
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [cardsWithImages, setCardsWithImages] = useState<CardWithImages[]>([]);
 
   // Use cached card names data
@@ -92,25 +90,6 @@ export default function CardTable({ cards, onEdit, onDelete, isLoading = false, 
     setCardsWithImages(enrichedCards);
   }, [cards, cardNamesData, cardNamesError]);
 
-  const handleDeleteClick = (id: string) => {
-    setDeleteConfirm(id);
-  };
-
-  const handleDeleteConfirm = async (id: string) => {
-    try {
-      setDeletingId(id);
-      await onDelete(id);
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error('Delete error:', error);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirm(null);
-  };
 
   if (cardsWithImages.length === 0) {
     return (
@@ -220,42 +199,15 @@ export default function CardTable({ cards, onEdit, onDelete, isLoading = false, 
                           <Edit className="h-4 w-4" />
                         </Button>
                         
-                        {deleteConfirm === card._id ? (
-                          <div className="flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteConfirm(card._id)}
-                              disabled={deletingId === card._id}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                            >
-                              {deletingId === card._id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleDeleteCancel}
-                              disabled={deletingId === card._id}
-                              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(card._id)}
-                            disabled={isLoading}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDelete(card as ICardPlatform)}
+                          disabled={isLoading}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">Read Only</span>

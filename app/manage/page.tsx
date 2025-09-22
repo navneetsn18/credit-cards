@@ -3,12 +3,13 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import CardForm from '@/components/CardForm';
 import CardTable from '@/components/CardTable';
 import AddCardForm from '@/components/AddCardForm';
+import DeleteConfirmationDialog from '@/components/DeleteConfirmationDialog';
 
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,26 +23,27 @@ import CacheStatus from '@/components/CacheStatus';
 export default function ManagePage() {
   const router = useRouter();
   const [editingCard, setEditingCard] = useState<ICardPlatform | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    card: ICardPlatform | null;
+  }>({ open: false, card: null });
+  const [isDeleting, setIsDeleting] = useState(false);
   const permissions = usePermissions();
-  
-  const showMessage = useCallback((type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  }, []);
   
   const handleError = useCallback((error: string) => {
     if (error.includes('Database authentication failed')) {
-      showMessage('error', 'Database connection failed. Please check MongoDB credentials.');
+      toast.error('Database connection failed. Please check MongoDB credentials.');
     } else {
-      showMessage('error', error);
+      toast.error(error);
     }
-  }, [showMessage]);
+  }, []);
   
   const {
     data: cards,
     loading: isLoading,
     refresh: refreshCards,
+    invalidate: invalidateCards,
+    mutate: mutateCards,
     isStale,
   } = useCachedCards({
     onError: handleError,
@@ -50,7 +52,7 @@ export default function ManagePage() {
 
   const handleCreateCard = async (data: Partial<ICardPlatform>) => {
     if (!permissions.write) {
-      showMessage('error', 'Write access is disabled');
+      toast.error('Write access is disabled');
       return;
     }
 
@@ -69,14 +71,20 @@ export default function ManagePage() {
         // Clear all related caches and refresh data
         browserCache.delete(CACHE_KEYS.CARDS);
         browserCache.delete(CACHE_KEYS.CARD_NAMES);
-        refreshCards();
-        showMessage('success', 'Benefits added successfully!');
+        await invalidateCards();
+        toast.success('Benefits added successfully!', {
+          description: `Added benefits for ${data.cardName} on ${data.platformName}`,
+        });
       } else {
-        showMessage('error', result.message || 'Failed to add benefits');
+        toast.error('Failed to add benefits', {
+          description: result.message || 'Please try again',
+        });
       }
     } catch (error) {
       console.error('Error creating card:', error);
-      showMessage('error', 'Failed to add benefits');
+      toast.error('Failed to add benefits', {
+        description: 'Network error. Please check your connection and try again.',
+      });
     }
   };
 
@@ -84,7 +92,7 @@ export default function ManagePage() {
     if (!editingCard) return;
     
     if (!permissions.write) {
-      showMessage('error', 'Write access is disabled');
+      toast.error('Write access is disabled');
       return;
     }
 
@@ -103,44 +111,84 @@ export default function ManagePage() {
         // Clear all related caches and refresh data
         browserCache.delete(CACHE_KEYS.CARDS);
         browserCache.delete(CACHE_KEYS.CARD_NAMES);
-        refreshCards();
+        await invalidateCards();
         setEditingCard(null);
-        showMessage('success', 'Benefits updated successfully!');
+        toast.success('Benefits updated successfully!', {
+          description: `Updated benefits for ${editingCard.cardName} on ${editingCard.platformName}`,
+        });
       } else {
-        showMessage('error', result.message || 'Failed to update benefits');
+        toast.error('Failed to update benefits', {
+          description: result.message || 'Please try again',
+        });
       }
     } catch (error) {
       console.error('Error updating card:', error);
-      showMessage('error', 'Failed to update benefits');
+      toast.error('Failed to update benefits', {
+        description: 'Network error. Please check your connection and try again.',
+      });
     }
   };
 
-  const handleDeleteCard = async (id: string) => {
+  const handleDeleteClick = (card: ICardPlatform) => {
     if (!permissions.write) {
-      showMessage('error', 'Write access is disabled');
+      toast.error('Write access is disabled');
       return;
     }
+    setDeleteDialog({ open: true, card });
+  };
 
+  const handleDeleteConfirm = async (secret: string) => {
+    if (!deleteDialog.card) return;
+
+    setIsDeleting(true);
+    
     try {
-      const response = await fetch(`/api/cards/${id}`, {
+      const response = await fetch(`/api/cards/${deleteDialog.card._id}`, {
         method: 'DELETE',
+        headers: {
+          'x-delete-secret': secret,
+        },
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        // Clear all related caches and refresh data
-        browserCache.delete(CACHE_KEYS.CARDS);
+      if (response.ok && result.success) {
+        // Optimistically update cache
+        const currentCards = cards as ICardPlatform[];
+        const updatedCards = currentCards.filter(card => card._id !== deleteDialog.card!._id);
+        mutateCards(updatedCards as ICardPlatform[]);
+        
+        // Clear related caches
         browserCache.delete(CACHE_KEYS.CARD_NAMES);
-        refreshCards();
-        showMessage('success', 'Benefits deleted successfully!');
+        
+        toast.success('Benefits deleted successfully!', {
+          description: `Deleted benefits for ${deleteDialog.card.cardName} on ${deleteDialog.card.platformName}`,
+        });
+        setDeleteDialog({ open: false, card: null });
       } else {
-        showMessage('error', result.message || 'Failed to delete benefits');
+        const errorMessage = result.message || 'Failed to delete benefits';
+        if (response.status === 401) {
+          toast.error('Invalid delete secret', {
+            description: 'Please check the secret and try again.',
+          });
+        } else {
+          toast.error('Failed to delete benefits', {
+            description: errorMessage,
+          });
+        }
       }
     } catch (error) {
       console.error('Error deleting card:', error);
-      showMessage('error', 'Failed to delete benefits');
+      toast.error('Failed to delete benefits', {
+        description: 'Network error. Please check your connection and try again.',
+      });
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ open: false, card: null });
   };
 
   const handleEditCard = (card: ICardPlatform) => {
@@ -154,7 +202,9 @@ export default function ManagePage() {
   const handleCardAdded = () => {
     // Refresh the cards list when a new card is added
     // This will update the dropdown in the benefits form
-    showMessage('success', 'Card added successfully! You can now add benefits for this card.');
+    toast.success('Card added successfully!', {
+      description: 'You can now add benefits for this card.',
+    });
   };
 
 
@@ -209,22 +259,6 @@ export default function ManagePage() {
         </div>
       </div>
 
-      {/* Success/Error Message */}
-      {message && (
-        <div className="container mx-auto px-4 pt-6">
-          <Alert className={`${
-            message.type === 'success'
-              ? 'border-green-200 bg-green-50'
-              : 'border-red-200 bg-red-50'
-          }`}>
-            <AlertDescription className={`${
-              message.type === 'success' ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {message.text}
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
 
       {/* Permissions Status */}
       <div className="container mx-auto px-4 py-6">
@@ -315,7 +349,7 @@ export default function ManagePage() {
                 <CardTable
                   cards={(cards as ICardPlatform[]) || []}
                   onEdit={handleEditCard}
-                  onDelete={handleDeleteCard}
+                  onDelete={handleDeleteClick}
                   isLoading={isLoading}
                   readOnly={!permissions.write}
                 />
@@ -324,6 +358,19 @@ export default function ManagePage() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialog.open}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Benefits"
+        description={deleteDialog.card ? 
+          `Are you sure you want to delete the benefits for ${deleteDialog.card.cardName} on ${deleteDialog.card.platformName}?` :
+          "Are you sure you want to delete these benefits?"
+        }
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

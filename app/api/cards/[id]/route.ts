@@ -121,6 +121,32 @@ export async function DELETE(
       );
     }
 
+    // Check for delete secret
+    const deleteSecret = request.headers.get('x-delete-secret');
+    const envSecret = process.env.DELETE_SECRET;
+    
+    if (!envSecret) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Server configuration error',
+          message: 'Delete secret not configured on server',
+        },
+        { status: 500 }
+      );
+    }
+    
+    if (!deleteSecret || deleteSecret !== envSecret) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+          message: 'Invalid or missing delete secret',
+        },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
     const { id } = await params;

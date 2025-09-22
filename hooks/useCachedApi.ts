@@ -211,11 +211,30 @@ export function useCachedApi<T>(
     }
   }, [autoFetch, cacheKey, fetchData]); // Include necessary dependencies
 
+  const mutate = useCallback((newData: T) => {
+    // Update cache and state with new data
+    browserCache.set(cacheKey, newData, ttl);
+    setState(prev => ({
+      ...prev,
+      data: newData,
+      lastFetched: Date.now(),
+      error: null,
+    }));
+  }, [cacheKey, ttl]);
+
+  const invalidate = useCallback(() => {
+    // Clear cache and refresh data
+    browserCache.delete(cacheKey);
+    return fetchData(true);
+  }, [cacheKey, fetchData]);
+
   return {
     ...state,
     fetch: fetchData,
     refresh,
     clearCache,
+    mutate,
+    invalidate,
     isStale: state.lastFetched ? Date.now() - state.lastFetched > ttl : true,
   };
 }
