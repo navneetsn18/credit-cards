@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Card from '@/lib/models/CardName';
 import { canRead, canWrite } from '@/lib/permissions';
-import { getCardNamesWithBenefits } from '@/lib/cardUtils';
+// ...existing code...
 
 export async function GET() {
   try {

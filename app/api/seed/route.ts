@@ -4,10 +4,13 @@ import CardPlatform from '@/lib/models/Card';
 import Card from '@/lib/models/CardName';
 import { canWrite } from '@/lib/permissions';
 
-const sampleCards: any[] = [
+import { ICardPlatform } from '@/lib/models/Card';
+import { ICard } from '@/lib/models/CardName';
+// ...existing code...
+const sampleCards: ICardPlatform[] = [
 ]
 
-const sampleCardNames: any[] = [
+const sampleCardNames: ICard[] = [
 ]
 
 export async function POST() {
