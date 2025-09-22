@@ -1,55 +1,35 @@
+'use client';
+
 import SearchInterface from '@/components/SearchInterface';
-import connectDB from '@/lib/mongodb';
-import CardPlatform, { ICardPlatform } from '@/lib/models/Card';
-import { canRead } from '@/lib/permissions';
+import { ICardPlatform } from '@/lib/models/Card';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useCachedCards } from '@/hooks/useCachedApi';
 
-type PlainCardPlatform = {
-  _id: string;
-  cardName: string;
-  platformName: string;
-  platformImageUrl?: string;
-  rewardRate: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export default function Home() {
+  const permissions = usePermissions();
+  const { data: cards, loading, error, refresh, isStale } = useCachedCards();
 
-async function getCards(): Promise<PlainCardPlatform[]> {
-  try {
-    if (!canRead()) {
-      return [];
-    }
-
-    await connectDB();
-    
-    const cards = await CardPlatform.find({})
-      .sort({ rewardRate: -1, cardName: 1 })
-      .lean();
-
-    console.log('Home page - Found cards:', cards.length);
-    console.log('Home page - Sample card:', cards[0] || 'No cards found');
-
-    // Convert MongoDB documents to plain objects
-    return cards.map(card => ({
-      _id: String(card._id),
-      cardName: card.cardName,
-      platformName: card.platformName,
-      platformImageUrl: card.platformImageUrl,
-      rewardRate: card.rewardRate,
-      description: card.description,
-      createdAt: card.createdAt,
-      updatedAt: card.updatedAt,
-    }));
-  } catch (error) {
-    console.error('Error fetching cards:', error);
-    return [];
+  if (permissions.loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-600" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Loading...
+            </h3>
+            <p className="text-gray-600">
+              Checking permissions and loading data.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
-}
 
-export default async function Home() {
-  if (!canRead()) {
+  if (!permissions.read) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <Card className="max-w-md mx-auto">
@@ -69,7 +49,43 @@ export default async function Home() {
     );
   }
 
-  const cards = await getCards();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-600" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Loading Benefits...
+            </h3>
+            <p className="text-gray-600">
+              Fetching the latest credit card benefits data.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  return <SearchInterface cards={cards as ICardPlatform[]} />;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <Lock className="w-8 h-8 text-red-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Error Loading Data
+            </h3>
+            <p className="text-gray-600">
+              {error}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return <SearchInterface cards={(cards as ICardPlatform[]) || []} />;
 }

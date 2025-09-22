@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import CardForm, { CardFormRef } from '@/components/CardForm';
 import CardTable from '@/components/CardTable';
@@ -318,14 +317,6 @@ export default function ManagePage() {
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Search
-              </Button>
-              
-              {/* Alternative Link as backup */}
-              <Button asChild variant="outline" className="bg-white text-gray-700 hover:bg-gray-50">
-                <Link href="/" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Home
-                </Link>
               </Button>
             </div>
           </div>

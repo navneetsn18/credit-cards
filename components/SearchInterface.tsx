@@ -12,6 +12,9 @@ import { useCachedCardNames } from '@/hooks/useCachedApi';
 
 interface SearchInterfaceProps {
   cards: ICardPlatform[];
+  onRefresh?: () => void;
+  isStale?: boolean;
+  isLoading?: boolean;
 }
 
 interface CardWithImages {
