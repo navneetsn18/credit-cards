@@ -4,58 +4,11 @@ import CardPlatform from '@/lib/models/Card';
 import Card from '@/lib/models/CardName';
 import { canWrite } from '@/lib/permissions';
 
-const sampleCards = [
-  {
-    cardName: "Chase Sapphire Preferred",
-    platformName: "Amazon",
-    platformImageUrl: "https://logo.clearbit.com/amazon.com",
-    rewardRate: "2x points",
-    description: "2x points on Amazon purchases",
-  },
-  {
-    cardName: "Chase Sapphire Preferred", 
-    platformName: "Restaurants",
-    platformImageUrl: "",
-    rewardRate: "3x points",
-    description: "3x points on dining and restaurants",
-  },
-  {
-    cardName: "American Express Gold",
-    platformName: "Groceries",
-    platformImageUrl: "",
-    rewardRate: "4x points",
-    description: "4x points on supermarket purchases",
-  },
-  {
-    cardName: "American Express Gold",
-    platformName: "Restaurants", 
-    platformImageUrl: "",
-    rewardRate: "4x points",
-    description: "4x points on dining worldwide",
-  },
-  {
-    cardName: "Capital One Venture X",
-    platformName: "Travel",
-    platformImageUrl: "",
-    rewardRate: "2x miles",
-    description: "2x miles on all travel purchases",
-  }
-];
+const sampleCards: any[] = [
+]
 
-const sampleCardNames = [
-  {
-    name: "Chase Sapphire Preferred",
-    imageUrl: "https://creditcards.chase.com/K-Marketplace/images/cardart/sapphire_preferred_card.png",
-  },
-  {
-    name: "American Express Gold",
-    imageUrl: "https://icm.aexp-static.com/Internet/Acquisition/US_en/AppContent/OneSite/category/cardarts/gold-card.png",
-  },
-  {
-    name: "Capital One Venture X",
-    imageUrl: "",
-  }
-];
+const sampleCardNames: any[] = [
+]
 
 export async function POST() {
   try {

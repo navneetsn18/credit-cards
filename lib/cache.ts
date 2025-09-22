@@ -8,7 +8,7 @@ interface CacheItem<T> {
 class BrowserCache {
   private static instance: BrowserCache;
   private cache: Map<string, CacheItem<unknown>> = new Map();
-  private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly DEFAULT_TTL = 1 * 60 * 1000; // 1 minutes
 
   static getInstance(): BrowserCache {
     if (!BrowserCache.instance) {

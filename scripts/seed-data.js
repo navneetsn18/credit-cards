@@ -2,72 +2,11 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config({ path: '.env.local' });
 
 const sampleCards = [
-  {
-    cardName: "Chase Sapphire Preferred",
-    platformName: "Amazon",
-    platformImageUrl: "https://logo.clearbit.com/amazon.com",
-    rewardRate: "2x points",
-    description: "2x points on Amazon purchases",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    cardName: "Chase Sapphire Preferred", 
-    platformName: "Restaurants",
-    platformImageUrl: "",
-    rewardRate: "3x points",
-    description: "3x points on dining and restaurants",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    cardName: "American Express Gold",
-    platformName: "Groceries",
-    platformImageUrl: "",
-    rewardRate: "4x points",
-    description: "4x points on supermarket purchases",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    cardName: "American Express Gold",
-    platformName: "Restaurants", 
-    platformImageUrl: "",
-    rewardRate: "4x points",
-    description: "4x points on dining worldwide",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    cardName: "Capital One Venture X",
-    platformName: "Travel",
-    platformImageUrl: "",
-    rewardRate: "2x miles",
-    description: "2x miles on all travel purchases",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
+  
 ];
 
 const sampleCardNames = [
-  {
-    name: "Chase Sapphire Preferred",
-    imageUrl: "https://creditcards.chase.com/K-Marketplace/images/cardart/sapphire_preferred_card.png",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    name: "American Express Gold",
-    imageUrl: "https://icm.aexp-static.com/Internet/Acquisition/US_en/AppContent/OneSite/category/cardarts/gold-card.png",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    name: "Capital One Venture X",
-    imageUrl: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
+ 
 ];
 
 async function seedData() {
