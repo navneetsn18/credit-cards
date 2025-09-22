@@ -41,7 +41,7 @@ npm install
 3. Set up environment variables:
 Create a `.env.local` file in the root directory:
 ```env
-MONGODB_URI=mongodb+srv://testingfornsn_db_user:apNIpU5Hiz5Q7mxV@credit-cards.x51intw.mongodb.net/
+MONGODB_URI=<YOUR_MONGODB_URI>
 MONGODB_DB=credit-cards-benefits
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
