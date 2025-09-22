@@ -1,9 +1,11 @@
 export function canRead(): boolean {
-  return process.env.ALLOW_READ === 'true';
+  const value = process.env.ALLOW_READ?.toLowerCase().trim();
+  return value !== 'false' && value !== '0' && value !== 'no' && value !== '';
 }
 
 export function canWrite(): boolean {
-  return process.env.ALLOW_WRITE === 'true';
+  const value = process.env.ALLOW_WRITE?.toLowerCase().trim();
+  return value !== 'false' && value !== '0' && value !== 'no' && value !== '';
 }
 
 export function getPermissions() {

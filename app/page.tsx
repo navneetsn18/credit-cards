@@ -28,6 +28,9 @@ async function getCards(): Promise<PlainCardPlatform[]> {
       .sort({ rewardRate: -1, cardName: 1 })
       .lean();
 
+    console.log('Home page - Found cards:', cards.length);
+    console.log('Home page - Sample card:', cards[0] || 'No cards found');
+
     // Convert MongoDB documents to plain objects
     return cards.map(card => ({
       _id: String(card._id),

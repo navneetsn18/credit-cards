@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import CardPlatform from '@/lib/models/Card';
 import mongoose from 'mongoose';
 import { canWrite } from '@/lib/permissions';
+import { cleanupOrphanedCardNames } from '@/lib/cardUtils';
 
 export async function PUT(
   request: NextRequest,
@@ -149,10 +150,18 @@ export async function DELETE(
       );
     }
 
+    // Clean up orphaned card names after deleting benefits
+    const orphanedCards = await cleanupOrphanedCardNames();
+    
+    const message = orphanedCards.length > 0 
+      ? `Card deleted successfully. Also removed ${orphanedCards.length} unused card name(s).`
+      : 'Card deleted successfully';
+
     return NextResponse.json({
       success: true,
       data: deletedCard,
-      message: 'Card deleted successfully',
+      message,
+      orphanedCardsRemoved: orphanedCards,
     });
   } catch (error) {
     console.error('DELETE /api/cards/[id] error:', error);

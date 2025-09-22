@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CardForm from '@/components/CardForm';
 import CardTable from '@/components/CardTable';
@@ -12,50 +13,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ICardPlatform } from '@/lib/models/Card';
-import { ArrowLeft, Settings, Lock, Eye, Edit, Shield } from 'lucide-react';
+import { ArrowLeft, Settings, Lock, Eye, Edit, Shield, RefreshCw } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useCachedCards } from '@/hooks/useCachedApi';
+import { browserCache, CACHE_KEYS } from '@/lib/cache';
+import CacheStatus from '@/components/CacheStatus';
 
 export default function ManagePage() {
-  const [cards, setCards] = useState<ICardPlatform[]>([]);
+  const router = useRouter();
   const [editingCard, setEditingCard] = useState<ICardPlatform | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const permissions = usePermissions();
-
-  const fetchCards = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/cards');
-      const result = await response.json();
-      
-      if (result.success) {
-        setCards(result.data || []);
-      } else {
-        // Show more specific error message for authentication issues
-        if (result.error === 'Database authentication failed') {
-          showMessage('error', 'Database connection failed. Please check MongoDB credentials.');
-        } else {
-          showMessage('error', result.message || 'Failed to fetch cards');
-        }
-        setCards([]);
-      }
-    } catch (error) {
-      console.error('Error fetching cards:', error);
-      showMessage('error', 'Failed to fetch cards');
-      setCards([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
+  
+  const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 5000);
-  };
+  }, []);
+  
+  const handleError = useCallback((error: string) => {
+    if (error.includes('Database authentication failed')) {
+      showMessage('error', 'Database connection failed. Please check MongoDB credentials.');
+    } else {
+      showMessage('error', error);
+    }
+  }, [showMessage]);
+  
+  const {
+    data: cards,
+    loading: isLoading,
+    refresh: refreshCards,
+    isStale,
+  } = useCachedCards({
+    onError: handleError,
+  });
+
 
   const handleCreateCard = async (data: Partial<ICardPlatform>) => {
     if (!permissions.write) {
@@ -64,7 +55,6 @@ export default function ManagePage() {
     }
 
     try {
-      setIsLoading(true);
       const response = await fetch('/api/cards', {
         method: 'POST',
         headers: {
@@ -76,7 +66,10 @@ export default function ManagePage() {
       const result = await response.json();
 
       if (result.success) {
-        setCards([...cards, result.data]);
+        // Clear all related caches and refresh data
+        browserCache.delete(CACHE_KEYS.CARDS);
+        browserCache.delete(CACHE_KEYS.CARD_NAMES);
+        refreshCards();
         showMessage('success', 'Benefits added successfully!');
       } else {
         showMessage('error', result.message || 'Failed to add benefits');
@@ -84,8 +77,6 @@ export default function ManagePage() {
     } catch (error) {
       console.error('Error creating card:', error);
       showMessage('error', 'Failed to add benefits');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -98,7 +89,6 @@ export default function ManagePage() {
     }
 
     try {
-      setIsLoading(true);
       const response = await fetch(`/api/cards/${editingCard._id}`, {
         method: 'PUT',
         headers: {
@@ -110,9 +100,10 @@ export default function ManagePage() {
       const result = await response.json();
 
       if (result.success) {
-        setCards(cards.map(card => 
-          card._id === editingCard._id ? result.data : card
-        ));
+        // Clear all related caches and refresh data
+        browserCache.delete(CACHE_KEYS.CARDS);
+        browserCache.delete(CACHE_KEYS.CARD_NAMES);
+        refreshCards();
         setEditingCard(null);
         showMessage('success', 'Benefits updated successfully!');
       } else {
@@ -121,8 +112,6 @@ export default function ManagePage() {
     } catch (error) {
       console.error('Error updating card:', error);
       showMessage('error', 'Failed to update benefits');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -140,7 +129,10 @@ export default function ManagePage() {
       const result = await response.json();
 
       if (result.success) {
-        setCards(cards.filter(card => card._id !== id));
+        // Clear all related caches and refresh data
+        browserCache.delete(CACHE_KEYS.CARDS);
+        browserCache.delete(CACHE_KEYS.CARD_NAMES);
+        refreshCards();
         showMessage('success', 'Benefits deleted successfully!');
       } else {
         showMessage('error', result.message || 'Failed to delete benefits');
@@ -186,12 +178,33 @@ export default function ManagePage() {
                 </p>
               </div>
             </div>
-            <Button asChild variant="secondary" className="bg-white text-gray-900 hover:bg-gray-100">
-              <Link href="/" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
+            <div className="flex gap-2">
+              <Button 
+                variant="secondary" 
+                className="bg-white text-gray-900 hover:bg-gray-100"
+                onClick={() => {
+                  console.log('Back to Search clicked');
+                  try {
+                    console.log('Trying router.push');
+                    router.push('/');
+                  } catch (error) {
+                    console.log('Router failed, using window.location', error);
+                    window.location.href = '/';
+                  }
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Search
-              </Link>
-            </Button>
+              </Button>
+              
+              {/* Alternative Link as backup */}
+              <Button asChild variant="outline" className="bg-white text-gray-700 hover:bg-gray-50">
+                <Link href="/" className="flex items-center gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Home
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -235,6 +248,21 @@ export default function ManagePage() {
                     Write: {permissions.loading ? "..." : permissions.write ? "Enabled" : "Disabled"}
                   </Badge>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isStale ? "destructive" : "outline"} className="text-xs">
+                    Cache: {isStale ? "Stale" : "Fresh"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => refreshCards()}
+                    disabled={isLoading}
+                    className="h-8 w-8 p-0"
+                    title="Refresh data"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
               </div>
             </div>
             {!permissions.write && !permissions.loading && (
@@ -260,13 +288,11 @@ export default function ManagePage() {
           </TabsList>
           
           <TabsContent value="add-cards" className="space-y-6">
-            <div className="max-w-md mx-auto">
-              <AddCardForm onCardAdded={handleCardAdded} disabled={!permissions.write} />
-            </div>
+            <AddCardForm onCardAdded={handleCardAdded} disabled={!permissions.write} />
           </TabsContent>
           
           <TabsContent value="manage-benefits" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Form Section */}
               <div>
                 <CardForm
@@ -277,12 +303,17 @@ export default function ManagePage() {
                   isLoading={isLoading}
                   disabled={!permissions.write}
                 />
+                
+                {/* Cache Status */}
+                <div className="mt-6">
+                  <CacheStatus />
+                </div>
               </div>
 
               {/* Table Section */}
-              <div>
+              <div className="xl:col-span-2">
                 <CardTable
-                  cards={cards}
+                  cards={(cards as ICardPlatform[]) || []}
                   onEdit={handleEditCard}
                   onDelete={handleDeleteCard}
                   isLoading={isLoading}

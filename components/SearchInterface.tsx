@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, CreditCard, Store, Filter, TrendingUp } from 'lucide-react';
 import VisitorCounter from './VisitorCounter';
+import { useCachedCardNames } from '@/hooks/useCachedApi';
 
 interface SearchInterfaceProps {
   cards: ICardPlatform[];
@@ -44,65 +45,47 @@ export default function SearchInterface({ cards }: SearchInterfaceProps) {
   const [cardsWithImages, setCardsWithImages] = useState<CardWithImages[]>([]);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Fetch card images from the cards collection
+  // Fetch card images from the cards collection using cached API
+  const { data: cardNamesData } = useCachedCardNames();
+
+  // Process card images when data changes
   useEffect(() => {
-    const fetchCardImages = async () => {
-      try {
-        const response = await fetch('/api/cards/names');
-        const data = await response.json();
-        
-        if (data.success) {
-          const cardImages = data.data.reduce((acc: Record<string, string>, card: { name: string; imageUrl?: string }) => {
-            if (card.imageUrl) {
-              acc[card.name] = card.imageUrl;
-            }
-            return acc;
-          }, {});
-
-          const enrichedCards: CardWithImages[] = cards.map(card => ({
-            _id: card._id,
-            cardName: card.cardName,
-            platformName: card.platformName,
-            platformImageUrl: card.platformImageUrl,
-            rewardRate: card.rewardRate,
-            description: card.description,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
-            cardImageUrl: cardImages[card.cardName] || undefined,
-          }));
-
-          setCardsWithImages(enrichedCards);
-        } else {
-          const plainCards: CardWithImages[] = cards.map(card => ({
-            _id: card._id,
-            cardName: card.cardName,
-            platformName: card.platformName,
-            platformImageUrl: card.platformImageUrl,
-            rewardRate: card.rewardRate,
-            description: card.description,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
-          }));
-          setCardsWithImages(plainCards);
+    if (cardNamesData && Array.isArray(cardNamesData)) {
+      const cardImages = cardNamesData.reduce((acc: Record<string, string>, card: { name: string; imageUrl?: string }) => {
+        if (card.imageUrl) {
+          acc[card.name] = card.imageUrl;
         }
-      } catch (error) {
-        console.error('Error fetching card images:', error);
-        const plainCards: CardWithImages[] = cards.map(card => ({
-          _id: card._id,
-          cardName: card.cardName,
-          platformName: card.platformName,
-          platformImageUrl: card.platformImageUrl,
-          rewardRate: card.rewardRate,
-          description: card.description,
-          createdAt: card.createdAt,
-          updatedAt: card.updatedAt,
-        }));
-        setCardsWithImages(plainCards);
-      }
-    };
+        return acc;
+      }, {});
 
-    fetchCardImages();
-  }, [cards]);
+      const enrichedCards: CardWithImages[] = cards.map(card => ({
+        _id: card._id,
+        cardName: card.cardName,
+        platformName: card.platformName,
+        platformImageUrl: card.platformImageUrl,
+        rewardRate: card.rewardRate,
+        description: card.description,
+        createdAt: card.createdAt,
+        updatedAt: card.updatedAt,
+        cardImageUrl: cardImages[card.cardName] || undefined,
+      }));
+
+      setCardsWithImages(enrichedCards);
+    } else {
+      // Fallback when no card names data is available
+      const plainCards: CardWithImages[] = cards.map(card => ({
+        _id: card._id,
+        cardName: card.cardName,
+        platformName: card.platformName,
+        platformImageUrl: card.platformImageUrl,
+        rewardRate: card.rewardRate,
+        description: card.description,
+        createdAt: card.createdAt,
+        updatedAt: card.updatedAt,
+      }));
+      setCardsWithImages(plainCards);
+    }
+  }, [cards, cardNamesData]);
 
   // Get unique cards and platforms for filtering
   const uniqueCards = useMemo(() => {

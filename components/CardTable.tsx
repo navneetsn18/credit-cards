@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Check, X, CreditCard, Store, Loader2 } from 'lucide-react';
+import { useCachedCardNames } from '@/hooks/useCachedApi';
 
 interface CardTableProps {
   cards: ICardPlatform[];
@@ -32,50 +33,38 @@ export default function CardTable({ cards, onEdit, onDelete, isLoading = false, 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [cardsWithImages, setCardsWithImages] = useState<CardWithImages[]>([]);
 
-  // Fetch card images from the cards collection
+  // Use cached card names data
+  const { data: cardNamesData, error: cardNamesError } = useCachedCardNames();
+
+  // Process card images when data changes
   useEffect(() => {
-    const fetchCardImages = async () => {
+    // Always create cards array, with or without images
+    let enrichedCards: CardWithImages[];
+
+    if (cardNamesData && Array.isArray(cardNamesData) && !cardNamesError) {
+      // Try to enrich with card images
       try {
-        const response = await fetch('/api/cards/names');
-        const data = await response.json();
-        
-        if (data.success) {
-          const cardImages = data.data.reduce((acc: Record<string, string>, card: { name: string; imageUrl?: string }) => {
-            if (card.imageUrl) {
-              acc[card.name] = card.imageUrl;
-            }
-            return acc;
-          }, {});
+        const cardImages = cardNamesData.reduce((acc: Record<string, string>, card: { name: string; imageUrl?: string }) => {
+          if (card.imageUrl) {
+            acc[card.name] = card.imageUrl;
+          }
+          return acc;
+        }, {});
 
-          const enrichedCards: CardWithImages[] = cards.map(card => ({
-            _id: card._id,
-            cardName: card.cardName,
-            platformName: card.platformName,
-            platformImageUrl: card.platformImageUrl,
-            rewardRate: card.rewardRate,
-            description: card.description,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
-            cardImageUrl: cardImages[card.cardName] || undefined,
-          }));
-
-          setCardsWithImages(enrichedCards);
-        } else {
-          const plainCards: CardWithImages[] = cards.map(card => ({
-            _id: card._id,
-            cardName: card.cardName,
-            platformName: card.platformName,
-            platformImageUrl: card.platformImageUrl,
-            rewardRate: card.rewardRate,
-            description: card.description,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
-          }));
-          setCardsWithImages(plainCards);
-        }
+        enrichedCards = cards.map(card => ({
+          _id: card._id,
+          cardName: card.cardName,
+          platformName: card.platformName,
+          platformImageUrl: card.platformImageUrl,
+          rewardRate: card.rewardRate,
+          description: card.description,
+          createdAt: card.createdAt,
+          updatedAt: card.updatedAt,
+          cardImageUrl: cardImages[card.cardName] || undefined,
+        }));
       } catch (error) {
-        console.error('Error fetching card images:', error);
-        const plainCards: CardWithImages[] = cards.map(card => ({
+        console.warn('Error processing card images, using fallback:', error);
+        enrichedCards = cards.map(card => ({
           _id: card._id,
           cardName: card.cardName,
           platformName: card.platformName,
@@ -85,12 +74,23 @@ export default function CardTable({ cards, onEdit, onDelete, isLoading = false, 
           createdAt: card.createdAt,
           updatedAt: card.updatedAt,
         }));
-        setCardsWithImages(plainCards);
       }
-    };
+    } else {
+      // Fallback when no card names data is available or there's an error
+      enrichedCards = cards.map(card => ({
+        _id: card._id,
+        cardName: card.cardName,
+        platformName: card.platformName,
+        platformImageUrl: card.platformImageUrl,
+        rewardRate: card.rewardRate,
+        description: card.description,
+        createdAt: card.createdAt,
+        updatedAt: card.updatedAt,
+      }));
+    }
 
-    fetchCardImages();
-  }, [cards]);
+    setCardsWithImages(enrichedCards);
+  }, [cards, cardNamesData, cardNamesError]);
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm(id);

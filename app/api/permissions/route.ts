@@ -5,10 +5,14 @@ export async function GET() {
   try {
     const permissions = getPermissions();
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       permissions,
     });
+
+    // Cache permissions for a short time
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    return response;
   } catch (error) {
     console.error('GET /api/permissions error:', error);
     

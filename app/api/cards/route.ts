@@ -32,11 +32,18 @@ export async function GET(request: NextRequest) {
       .sort({ rewardRate: -1, cardName: 1 })
       .lean();
 
-    return NextResponse.json({
+    console.log('GET /api/cards - Found cards:', cards.length);
+    console.log('GET /api/cards - Sample card:', cards[0] || 'No cards found');
+
+    const response = NextResponse.json({
       success: true,
       data: cards,
       count: cards.length,
     });
+
+    // Add cache headers for better performance
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     console.error('GET /api/cards error:', error);
     
