@@ -34,10 +34,11 @@ export async function GET() {
     console.log('Fetching cards from database...');
     
     // Get card names that actually have benefits
-    const cardNamesWithBenefits = await getCardNamesWithBenefits();
+    // const cardNamesWithBenefits = await getCardNamesWithBenefits();
     
     // Only return cards that have benefits
-    const cards = await Card.find({ name: { $in: cardNamesWithBenefits } })
+    // const cards = await Card.find({ name: { $in: cardNamesWithBenefits } })
+    const cards = await Card.find({})
       .select('name imageUrl')
       .sort({ name: 1 })
       .lean();

@@ -122,8 +122,8 @@ export const CACHE_KEYS = {
 
 // Cache TTL values (in milliseconds)
 export const CACHE_TTL = {
-  CARDS: 1 * 60 * 1000, // 1 minute - faster updates for multi-user scenarios
-  CARD_NAMES: 5 * 60 * 1000, // 5 minutes - rarely changes but faster than before
+  CARDS: 5 * 1000, // 1 minute - faster updates for multi-user scenarios
+  CARD_NAMES: 5 * 1000, // 5 minutes - rarely changes but faster than before
   PERMISSIONS: 30 * 1000, // 30 seconds - reasonable refresh
-  VISITORS: 1 * 60 * 1000, // 1 minute - frequently updated
+  VISITORS: 30 * 1000, // 1 minute - frequently updated
 } as const;
